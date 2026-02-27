@@ -2,6 +2,7 @@ import { kvGet, kvSet } from "../lib/kv-helpers";
 import { deduplicateJobs, removeExpiredJobs } from "../lib/deduplicator";
 import { fetchAdzuna } from "../lib/fetchers/adzuna";
 import { fetchRSS } from "../lib/fetchers/rss";
+import { generateSearchLinks } from "../lib/link-generator";
 import STATIC_JOBS from "@/data/jobs.json";
 
 export const dynamic = "force-dynamic";
@@ -118,7 +119,18 @@ export async function GET(request) {
     log.removedExpired = relevantJobs.length - activeJobs.length;
     log.totalActive = activeJobs.length;
 
-    // 7. Store in Blob
+    // 7. Ensure all jobs have searchLinks (covers static + carried-forward jobs)
+    for (const job of activeJobs) {
+      if (!job.searchLinks) {
+        job.searchLinks = generateSearchLinks(job);
+        // Update primary link to Indeed for Adzuna jobs with broken redirects
+        if (job.id?.startsWith("adzuna-")) {
+          job.link = job.searchLinks.indeed;
+        }
+      }
+    }
+
+    // 8. Store in Blob
     await kvSet("jobs:live", activeJobs);
     await kvSet("jobs:fingerprints", [...allFingerprints]);
     await kvSet("jobs:last-fetch", new Date().toISOString());

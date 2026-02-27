@@ -2,6 +2,8 @@
  * Transforms raw API responses into the app's 16-field job schema.
  */
 
+import { generateSearchLinks } from "./link-generator";
+
 const BIOMEDICAL_KEYWORDS = {
   "Molecular & Cell Biology": ["molecular", "cell biology", "genomics", "genetics", "pcr", "flow cytometry", "stem cell"],
   "Neuroscience": ["neuro", "brain", "cognitive", "electrophysiology"],
@@ -70,7 +72,7 @@ export function adzunaToJob(raw) {
   const location = raw.location?.display_name || "";
   const title = raw.title?.replace(/<[^>]*>/g, "") || ""; // strip HTML tags
 
-  return {
+  const job = {
     id: `adzuna-${raw.id}`,
     title,
     company: raw.company?.display_name || "Unknown",
@@ -86,10 +88,17 @@ export function adzunaToJob(raw) {
     description: (raw.description || "").replace(/<[^>]*>/g, "").slice(0, 500),
     requirements: [],
     posted: raw.created ? raw.created.split("T")[0] : new Date().toISOString().split("T")[0],
-    link: raw.redirect_url || "",
-    source: "Indeed", // Adzuna aggregates from Indeed/others
+    link: "", // will be set below
+    source: "Indeed",
     lastSeen: new Date().toISOString().split("T")[0],
   };
+
+  // Generate direct search URLs instead of broken Adzuna redirects
+  const links = generateSearchLinks(job);
+  job.link = links.indeed;
+  job.searchLinks = links;
+
+  return job;
 }
 
 // --- USAJobs ---
@@ -138,12 +147,12 @@ export function rssToJob(item, feedSource) {
   if (title.includes(" - ")) company = title.split(" - ").pop().trim();
   else if (title.includes(" at ")) company = title.split(" at ").pop().trim();
 
-  return {
+  const job = {
     id: `rss-${feedSource}-${simpleHash(title + link)}`,
     title: title.split(" - ")[0].split(" at ")[0].trim(),
     company,
     lab: null,
-    location: "New York, NY", // RSS feeds often lack structured location
+    location: "New York, NY",
     region: "NYC",
     jobType: guessJobType(title),
     category: guessCategory(title, cleanDesc),
@@ -154,10 +163,15 @@ export function rssToJob(item, feedSource) {
     description: cleanDesc,
     requirements: [],
     posted: pubDate ? new Date(pubDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-    link,
+    link: link || "",
     source: "Direct",
     lastSeen: new Date().toISOString().split("T")[0],
   };
+
+  // Add search links as fallbacks (RSS links may be direct to poster)
+  job.searchLinks = generateSearchLinks(job);
+
+  return job;
 }
 
 function simpleHash(str) {

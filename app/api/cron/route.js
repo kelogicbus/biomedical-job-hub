@@ -7,6 +7,44 @@ import STATIC_JOBS from "@/data/jobs.json";
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
 
+// ---- Entry-level relevance filter (applied to ALL jobs) ----
+
+const SENIOR_KEYWORDS = [
+  "senior", "sr.", "sr ", "principal", "director", "manager",
+  "head of", "chief", "vp ", "vice president", "lead",
+  "staff scientist", "distinguished", "fellow",
+  "professor", "faculty", "tenure", "pi ",
+  "executive", "supervisor", "superintendent",
+];
+
+const BIOMEDICAL_TERMS = [
+  "research", "lab", "laboratory", "biomedical", "biology",
+  "pharma", "biotech", "clinical", "molecular", "cell",
+  "neuro", "immuno", "genomic", "science", "chemistry",
+  "technician", "scientist", "biologist", "analyst",
+  "assay", "pcr", "tissue", "pathology", "oncology",
+  "microbiology", "biochem", "genetic", "specimen",
+];
+
+function isEntryLevel(job) {
+  const t = (job.title || "").toLowerCase();
+  const d = (job.description || "").toLowerCase();
+  const text = `${t} ${d}`;
+
+  // Reject senior roles
+  if (SENIOR_KEYWORDS.some((kw) => t.includes(kw))) return false;
+
+  // Must be biomedical-related
+  if (!BIOMEDICAL_TERMS.some((term) => text.includes(term))) return false;
+
+  // Reject very high salaries (senior indicator)
+  if (job.salaryMin && job.salaryMin > 100000) return false;
+
+  return true;
+}
+
+// ---- Cron handler ----
+
 export async function GET(request) {
   // Verify cron secret — accepts either:
   //   1. Authorization: Bearer <secret> (Vercel cron scheduler sends this)
@@ -21,10 +59,23 @@ export async function GET(request) {
   }
 
   const startTime = Date.now();
-  const log = { sources: {}, errors: [], totalFetched: 0, totalAfterDedup: 0, totalActive: 0 };
+  const log = {
+    sources: {},
+    errors: [],
+    totalFetched: 0,
+    totalAfterDedup: 0,
+    totalActive: 0,
+    removedIrrelevant: 0,
+    removedExpired: 0,
+    carriedForward: 0,
+  };
 
   try {
-    // 1. Fetch from Adzuna + RSS in parallel
+    // 1. Load existing jobs from Blob (carry forward from previous runs)
+    const existingJobs = (await kvGet("jobs:live")) || [];
+    log.carriedForward = existingJobs.length;
+
+    // 2. Fetch fresh jobs from Adzuna + RSS in parallel
     const [adzunaJobs, rssJobs] = await Promise.allSettled([
       fetchAdzuna(),
       fetchRSS(),
@@ -39,30 +90,32 @@ export async function GET(request) {
     log.sources.adzuna = adzunaResult.length;
     log.sources.rss = rssResult.length;
 
-    // 2. Combine all fetched jobs
     const allFetched = [...adzunaResult, ...rssResult];
     log.totalFetched = allFetched.length;
 
-    // 3. Get existing fingerprints from Blob for dedup against stored jobs
-    const existingFingerprints = (await kvGet("jobs:fingerprints")) || [];
-    const fpSet = new Set(existingFingerprints);
-
-    // 4. Deduplicate fetched jobs among themselves
-    const { jobs: dedupedFetched, fingerprints: newFingerprints } = deduplicateJobs(allFetched);
-    log.totalAfterDedup = dedupedFetched.length;
-
-    // 5. Merge with static jobs (static always included as baseline)
+    // 3. Prepare static jobs with today's date
     const today = new Date().toISOString().split("T")[0];
     const staticWithDate = STATIC_JOBS.map((j) => ({ ...j, lastSeen: today }));
 
-    // Deduplicate static + fetched (static wins on conflict since they have curated data)
+    // 4. Merge ALL sources: existing Blob jobs + static + freshly fetched
+    //    Order matters for dedup — first occurrence wins:
+    //    - Fresh fetched first (most up-to-date data)
+    //    - Static second (curated baseline)
+    //    - Existing last (carried forward, may be stale)
     const { jobs: mergedJobs, fingerprints: allFingerprints } = deduplicateJobs([
+      ...allFetched,
       ...staticWithDate,
-      ...dedupedFetched,
+      ...existingJobs,
     ]);
+    log.totalAfterDedup = mergedJobs.length;
 
-    // 6. Remove expired jobs (>30 days old and not refreshed)
-    const activeJobs = removeExpiredJobs(mergedJobs, 30);
+    // 5. Apply entry-level relevance filter to ALL jobs (including static + existing)
+    const relevantJobs = mergedJobs.filter(isEntryLevel);
+    log.removedIrrelevant = mergedJobs.length - relevantJobs.length;
+
+    // 6. Remove expired jobs (>30 days old and not refreshed by any source)
+    const activeJobs = removeExpiredJobs(relevantJobs, 30);
+    log.removedExpired = relevantJobs.length - activeJobs.length;
     log.totalActive = activeJobs.length;
 
     // 7. Store in Blob
@@ -75,7 +128,7 @@ export async function GET(request) {
       timestamp: new Date().toISOString(),
     });
 
-    console.log(`Cron complete: ${activeJobs.length} active jobs (${Date.now() - startTime}ms)`);
+    console.log(`Cron complete: ${activeJobs.length} active jobs, removed ${log.removedIrrelevant} irrelevant + ${log.removedExpired} expired (${Date.now() - startTime}ms)`);
 
     return Response.json({
       success: true,

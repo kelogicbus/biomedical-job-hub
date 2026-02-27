@@ -84,7 +84,6 @@ export default function Home() {
         }
       } catch (err) {
         console.warn("Failed to fetch live jobs, using fallback:", err.message);
-        // Keep FALLBACK_JOBS (already set as default)
       } finally {
         setLoading(false);
       }
@@ -264,7 +263,7 @@ export default function Home() {
 
         <div className="mt-8 mb-6 text-center text-xs text-gray-400">
           <p>
-            Data from Adzuna, USAJobs, Indeed, Glassdoor, LinkedIn, and institutional career pages.
+            Data from Adzuna, Indeed, Glassdoor, LinkedIn, and institutional career pages.
             {dataSource === "live" && " Auto-refreshes every 6 hours."}
             {dataSource === "fallback" && " Using curated dataset."}
           </p>

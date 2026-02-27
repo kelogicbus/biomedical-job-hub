@@ -124,7 +124,7 @@ export async function GET(request) {
       if (!job.searchLinks) {
         job.searchLinks = generateSearchLinks(job);
         // Update primary link to Indeed for Adzuna jobs with broken redirects
-        if (job.id?.startsWith("adzuna-")) {
+        if (String(job.id || "").startsWith("adzuna-")) {
           job.link = job.searchLinks.indeed;
         }
       }

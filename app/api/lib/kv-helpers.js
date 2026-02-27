@@ -9,7 +9,7 @@
  * Free tier: 1GB storage, 10k reads/month, 2k writes/month.
  */
 
-import { put, list, del } from "@vercel/blob";
+import { put, head, list, del } from "@vercel/blob";
 
 const PREFIX = "bjh/"; // namespace all keys under bjh/
 
@@ -21,15 +21,26 @@ export async function kvGet(key) {
   try {
     const path = blobPath(key);
 
-    // List blobs matching this path
-    const { blobs } = await list({ prefix: path, limit: 1 });
-    if (!blobs || blobs.length === 0) return null;
+    // Use head() to get blob metadata by exact pathname
+    const blob = await head(path).catch(() => null);
+    if (!blob || !blob.url) {
+      console.log(`KV GET ${key}: blob not found at path ${path}`);
+      return null;
+    }
 
-    // Public store — URL is directly accessible
-    const res = await fetch(blobs[0].url);
-    if (!res.ok) return null;
+    // Fetch with cache-busting to avoid stale CDN responses
+    const url = `${blob.url}?t=${Date.now()}`;
+    const res = await fetch(url, {
+      headers: { "Cache-Control": "no-cache" },
+    });
+
+    if (!res.ok) {
+      console.error(`KV GET ${key}: fetch failed ${res.status} from ${blob.url}`);
+      return null;
+    }
 
     const data = await res.json();
+    console.log(`KV GET ${key}: success, ${JSON.stringify(data).length} bytes`);
     return data;
   } catch (err) {
     console.error(`KV GET ${key} failed:`, err.message);
@@ -42,12 +53,13 @@ export async function kvSet(key, value) {
     const path = blobPath(key);
     const body = JSON.stringify(value);
 
-    await put(path, body, {
+    const blob = await put(path, body, {
       access: "public",
       contentType: "application/json",
       addRandomSuffix: false,
     });
 
+    console.log(`KV SET ${key}: stored at ${blob.url} (${body.length} bytes)`);
     return true;
   } catch (err) {
     console.error(`KV SET ${key} failed:`, err.message);
@@ -58,9 +70,9 @@ export async function kvSet(key, value) {
 export async function kvDel(key) {
   try {
     const path = blobPath(key);
-    const { blobs } = await list({ prefix: path, limit: 1 });
-    if (blobs && blobs.length > 0) {
-      await del(blobs[0].url);
+    const blob = await head(path).catch(() => null);
+    if (blob) {
+      await del(blob.url);
     }
     return true;
   } catch (err) {

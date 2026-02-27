@@ -66,23 +66,17 @@ git push -u origin main
 
 In Vercel dashboard → Settings → Domains → Add your domain (e.g., biomedjobs.com)
 
-## Refreshing job data
+## Live job fetching (automatic)
 
-See `scripts/REFRESH-PROMPT.md` for the full refresh workflow.
+The app automatically fetches fresh job listings every 6 hours from Adzuna (Indeed/Glassdoor aggregator), USAJobs (federal positions), and Science/Nature career RSS feeds.
 
-Quick version:
-1. Open Claude / Cowork
-2. Paste the refresh prompt from `scripts/REFRESH-PROMPT.md`
-3. Save the new JSON output as `data/jobs.json`
-4. Push to GitHub:
+To enable this, see **[docs/LIVE-SETUP-GUIDE.md](docs/LIVE-SETUP-GUIDE.md)** for the one-time setup (~15 minutes, all free).
 
-```bash
-git add data/jobs.json
-git commit -m "refresh job data"
-git push
-```
+Once configured, the app handles everything: fetching, deduplication, expiration of old listings, and merging with the curated dataset.
 
-Vercel auto-deploys within ~60 seconds.
+## Manual data refresh (alternative)
+
+See `scripts/REFRESH-PROMPT.md` for manually refreshing via Cowork. This is useful as a supplement to the auto-fetch, or if you prefer manual control.
 
 ## Tech stack
 
@@ -90,4 +84,6 @@ Vercel auto-deploys within ~60 seconds.
 - Tailwind CSS
 - Recharts (salary visualizations)
 - Vercel (hosting, free tier)
+- Vercel Blob (job data caching, 1GB free)
+- Adzuna + USAJobs + RSS (live job sources)
 - localStorage (client-side persistence)

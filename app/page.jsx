@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback } from "react";
-import JOBS from "@/data/jobs.json";
+import FALLBACK_JOBS from "@/data/jobs.json";
 import LIVE_FEEDS from "@/data/feeds.json";
 import { JobCard } from "@/components/JobCard";
 import { SalaryDashboard } from "@/components/SalaryDashboard";
@@ -40,6 +40,16 @@ function FilterChips({ items, value, onChange, label }) {
   );
 }
 
+function timeAgo(isoString) {
+  if (!isoString) return null;
+  const diff = Date.now() - new Date(isoString).getTime();
+  const hours = Math.floor(diff / 3600000);
+  if (hours < 1) return "just now";
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState("jobs");
   const [search, setSearch] = useState("");
@@ -54,6 +64,34 @@ export default function Home() {
   const [trackers, setTrackers] = usePersistedState("bjh-trackers", {});
   const [sortBy, setSortBy] = useState("newest");
 
+  // Live data state
+  const [jobs, setJobs] = useState(FALLBACK_JOBS);
+  const [dataSource, setDataSource] = useState("fallback");
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch jobs from API on mount
+  useEffect(() => {
+    async function loadJobs() {
+      try {
+        const res = await fetch("/api/jobs");
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (data.jobs && data.jobs.length > 0) {
+          setJobs(data.jobs);
+          setDataSource(data.source || "live");
+          setLastUpdated(data.lastUpdated || null);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch live jobs, using fallback:", err.message);
+        // Keep FALLBACK_JOBS (already set as default)
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadJobs();
+  }, []);
+
   const savedSet = useMemo(() => new Set(savedJobs), [savedJobs]);
 
   const toggleSave = useCallback((id) => {
@@ -65,7 +103,7 @@ export default function Home() {
   }, [setTrackers]);
 
   const filteredJobs = useMemo(() => {
-    let result = JOBS.filter(job => {
+    let result = jobs.filter(job => {
       const q = search.toLowerCase();
       const ms = !search || job.title.toLowerCase().includes(q) || job.company.toLowerCase().includes(q) || job.description.toLowerCase().includes(q) || job.category.toLowerCase().includes(q) || job.location.toLowerCase().includes(q) || (job.lab || "").toLowerCase().includes(q);
       return ms
@@ -81,7 +119,7 @@ export default function Home() {
     if (sortBy === "salary") result.sort((a, b) => (b.salaryMax || 0) - (a.salaryMax || 0));
     if (sortBy === "company") result.sort((a, b) => a.company.localeCompare(b.company));
     return result;
-  }, [search, category, region, jobType, employerType, sourceFilter, showNewOnly, showSavedOnly, savedSet, sortBy]);
+  }, [jobs, search, category, region, jobType, employerType, sourceFilter, showNewOnly, showSavedOnly, savedSet, sortBy]);
 
   const trackerStats = useMemo(() => {
     const counts = {};
@@ -91,12 +129,12 @@ export default function Home() {
   }, [trackers]);
 
   const totalTracked = Object.values(trackerStats).reduce((s, v) => s + v, 0);
-  const newCount = JOBS.filter(j => isNew(j.posted)).length;
+  const newCount = jobs.filter(j => isNew(j.posted)).length;
   const stats = useMemo(() => ({
-    total: JOBS.length, nyc: JOBS.filter(j => j.region === "NYC").length,
-    nj: JOBS.filter(j => j.region === "NJ").length,
-    companies: new Set(JOBS.map(j => j.company)).size,
-  }), []);
+    total: jobs.length, nyc: jobs.filter(j => j.region === "NYC").length,
+    nj: jobs.filter(j => j.region === "NJ").length,
+    companies: new Set(jobs.map(j => j.company)).size,
+  }), [jobs]);
 
   const tabs = [
     { id: "jobs", label: "Jobs Directory", icon: "M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" },
@@ -115,11 +153,19 @@ export default function Home() {
             </div>
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Biomedical Research Job Hub</h1>
-              <p className="text-blue-200 text-sm">NYC + NJ &middot; Academia &middot; Pharma &middot; Biotech &middot; New Grad Positions</p>
+              <p className="text-blue-200 text-sm">
+                NYC + NJ &middot; Academia &middot; Pharma &middot; Biotech &middot; New Grad Positions
+                {lastUpdated && (
+                  <span className="ml-2 text-blue-300">
+                    &middot; Updated {timeAgo(lastUpdated)}
+                    {dataSource === "live" && <span className="ml-1 inline-block w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5">
-            {[{ v: stats.total, l: "Total Listings" }, { v: stats.nyc, l: "NYC" }, { v: stats.nj, l: "New Jersey" }, { v: stats.companies, l: "Institutions" }, { v: newCount, l: "New This Week" }].map((s, i) => (
+            {[{ v: loading ? "..." : stats.total, l: "Total Listings" }, { v: loading ? "..." : stats.nyc, l: "NYC" }, { v: loading ? "..." : stats.nj, l: "New Jersey" }, { v: loading ? "..." : stats.companies, l: "Institutions" }, { v: loading ? "..." : newCount, l: "New This Week" }].map((s, i) => (
               <div key={i} className="bg-white/10 rounded-lg p-2.5 text-center backdrop-blur-sm">
                 <div className="text-xl font-bold">{s.v}</div>
                 <div className="text-xs text-blue-200">{s.l}</div>
@@ -180,31 +226,48 @@ export default function Home() {
             </div>
 
             <div className="flex items-center justify-between mb-4">
-              <p className="text-sm text-gray-500"><span className="font-semibold text-gray-900">{filteredJobs.length}</span> position{filteredJobs.length !== 1 ? "s" : ""}</p>
+              <p className="text-sm text-gray-500">
+                {loading ? (
+                  <span className="text-gray-400">Loading jobs...</span>
+                ) : (
+                  <><span className="font-semibold text-gray-900">{filteredJobs.length}</span> position{filteredJobs.length !== 1 ? "s" : ""}</>
+                )}
+              </p>
               {(category !== "All" || region !== "All" || jobType !== "All" || employerType !== "All" || sourceFilter !== "All" || showNewOnly || showSavedOnly || search) && (
                 <button onClick={() => { setSearch(""); setCategory("All"); setRegion("All"); setJobType("All"); setEmployerType("All"); setSourceFilter("All"); setShowNewOnly(false); setShowSavedOnly(false); }}
                   className="text-xs text-blue-600 hover:underline">Clear all filters</button>
               )}
             </div>
 
-            <div className="grid gap-4">
-              {filteredJobs.length > 0 ? filteredJobs.map(job => (
-                <JobCard key={job.id} job={job} tracker={trackers[job.id]} onUpdateTracker={updateTracker} onSave={toggleSave} saved={savedSet.has(job.id)} />
-              )) : (
-                <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
-                  <p className="text-gray-500">No jobs match your filters.</p>
-                </div>
-              )}
-            </div>
+            {loading ? (
+              <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+                <div className="animate-spin w-8 h-8 border-2 border-blue-600 border-t-transparent rounded-full mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">Fetching latest jobs...</p>
+              </div>
+            ) : (
+              <div className="grid gap-4">
+                {filteredJobs.length > 0 ? filteredJobs.map(job => (
+                  <JobCard key={job.id} job={job} tracker={trackers[job.id]} onUpdateTracker={updateTracker} onSave={toggleSave} saved={savedSet.has(job.id)} />
+                )) : (
+                  <div className="text-center py-16 bg-white rounded-xl border border-gray-200">
+                    <p className="text-gray-500">No jobs match your filters.</p>
+                  </div>
+                )}
+              </div>
+            )}
             <LiveFeeds feeds={LIVE_FEEDS} region={region} />
           </>
         )}
 
-        {activeTab === "salary" && <SalaryDashboard jobs={JOBS} />}
-        {activeTab === "pipeline" && <PipelineView trackers={trackers} jobs={JOBS} onUpdateTracker={updateTracker} />}
+        {activeTab === "salary" && <SalaryDashboard jobs={jobs} />}
+        {activeTab === "pipeline" && <PipelineView trackers={trackers} jobs={jobs} onUpdateTracker={updateTracker} />}
 
         <div className="mt-8 mb-6 text-center text-xs text-gray-400">
-          <p>Data from Indeed, Glassdoor, LinkedIn, ZipRecruiter, BioNJ, BioSpace, and institutional career pages.</p>
+          <p>
+            Data from Adzuna, USAJobs, Indeed, Glassdoor, LinkedIn, and institutional career pages.
+            {dataSource === "live" && " Auto-refreshes every 6 hours."}
+            {dataSource === "fallback" && " Using curated dataset."}
+          </p>
         </div>
       </div>
     </div>

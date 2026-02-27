@@ -1,5 +1,5 @@
 /**
- * KV Storage helpers using Vercel Blob (private store).
+ * KV Storage helpers using Vercel Blob (public store).
  * Stores each key as a JSON file in Blob storage.
  * Gracefully falls back to null if Blob unavailable.
  *
@@ -21,17 +21,12 @@ export async function kvGet(key) {
   try {
     const path = blobPath(key);
 
-    // List blobs matching this prefix/path to find the URL
+    // List blobs matching this path
     const { blobs } = await list({ prefix: path, limit: 1 });
     if (!blobs || blobs.length === 0) return null;
 
-    const blob = blobs[0];
-
-    // For private stores, fetch with the token in the header
-    const token = process.env.BLOB_READ_WRITE_TOKEN;
-    const res = await fetch(blob.downloadUrl, {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+    // Public store — URL is directly accessible
+    const res = await fetch(blobs[0].url);
     if (!res.ok) return null;
 
     const data = await res.json();
@@ -48,9 +43,9 @@ export async function kvSet(key, value) {
     const body = JSON.stringify(value);
 
     await put(path, body, {
-      access: "private",
+      access: "public",
       contentType: "application/json",
-      addRandomSuffix: false, // use exact path so we can overwrite
+      addRandomSuffix: false,
     });
 
     return true;

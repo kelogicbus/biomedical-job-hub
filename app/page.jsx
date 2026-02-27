@@ -151,7 +151,7 @@ export default function Home() {
               <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
             </div>
             <div>
-              <h1 className="text-2xl font-bold tracking-tight">Biomedical Research Job Hub</h1>
+              <h1 className="text-2xl font-bold tracking-tight">Rachael&#39;s Job Search &#x2764;&#xFE0F;</h1>
               <p className="text-blue-200 text-sm">
                 NYC + NJ &middot; Academia &middot; Pharma &middot; Biotech &middot; New Grad Positions
                 {lastUpdated && (

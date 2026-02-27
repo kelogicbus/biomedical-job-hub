@@ -2,12 +2,12 @@ import { rssToJob } from "../job-transformers";
 
 const RSS_FEEDS = [
   {
-    url: "https://www.science.org/action/showFeed?type=job&location=United+States",
-    name: "science-careers",
+    url: "https://feeds.nature.com/naturejobs/rss/sciencejobs",
+    name: "nature-jobs",
   },
   {
-    url: "https://www.nature.com/naturecareers.rss",
-    name: "nature-jobs",
+    url: "https://www.science.org/action/showFeed?type=etoc&feed=rss&jc=science",
+    name: "science-careers",
   },
 ];
 
@@ -65,13 +65,16 @@ export async function fetchRSS() {
       });
 
       if (!res.ok) {
-        console.warn(`RSS: ${res.status} for ${feed.name}`);
+        console.warn(`RSS: ${res.status} for ${feed.name} (${feed.url})`);
         continue;
       }
 
       const xml = await res.text();
+      console.log(`RSS: ${feed.name} returned ${xml.length} chars`);
       const items = parseRSSItems(xml);
+      console.log(`RSS: ${feed.name} parsed ${items.length} items`);
       const filtered = items.filter(isBiomedicalNYCNJ);
+      console.log(`RSS: ${feed.name} filtered to ${filtered.length} biomedical items`);
       const jobs = filtered.map((item) => rssToJob(item, feed.name));
       allJobs.push(...jobs);
     } catch (err) {

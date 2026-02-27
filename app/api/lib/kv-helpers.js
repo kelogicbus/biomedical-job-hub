@@ -1,5 +1,5 @@
 /**
- * KV Storage helpers using Vercel Blob.
+ * KV Storage helpers using Vercel Blob (private store).
  * Stores each key as a JSON file in Blob storage.
  * Gracefully falls back to null if Blob unavailable.
  *
@@ -9,7 +9,7 @@
  * Free tier: 1GB storage, 10k reads/month, 2k writes/month.
  */
 
-import { put, list, del, head } from "@vercel/blob";
+import { put, list, del } from "@vercel/blob";
 
 const PREFIX = "bjh/"; // namespace all keys under bjh/
 
@@ -21,12 +21,17 @@ export async function kvGet(key) {
   try {
     const path = blobPath(key);
 
-    // Check if blob exists first
-    const info = await head(path).catch(() => null);
-    if (!info) return null;
+    // List blobs matching this prefix/path to find the URL
+    const { blobs } = await list({ prefix: path, limit: 1 });
+    if (!blobs || blobs.length === 0) return null;
 
-    // Fetch the blob content
-    const res = await fetch(info.url);
+    const blob = blobs[0];
+
+    // For private stores, fetch with the token in the header
+    const token = process.env.BLOB_READ_WRITE_TOKEN;
+    const res = await fetch(blob.downloadUrl, {
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
     if (!res.ok) return null;
 
     const data = await res.json();
@@ -43,7 +48,7 @@ export async function kvSet(key, value) {
     const body = JSON.stringify(value);
 
     await put(path, body, {
-      access: "public",
+      access: "private",
       contentType: "application/json",
       addRandomSuffix: false, // use exact path so we can overwrite
     });
@@ -58,9 +63,9 @@ export async function kvSet(key, value) {
 export async function kvDel(key) {
   try {
     const path = blobPath(key);
-    const info = await head(path).catch(() => null);
-    if (info) {
-      await del(info.url);
+    const { blobs } = await list({ prefix: path, limit: 1 });
+    if (blobs && blobs.length > 0) {
+      await del(blobs[0].url);
     }
     return true;
   } catch (err) {

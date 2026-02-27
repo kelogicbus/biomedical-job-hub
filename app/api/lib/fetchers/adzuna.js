@@ -29,8 +29,8 @@ export async function fetchAdzuna() {
           what: query,
           where: location,
           results_per_page: "20",
-          content_type: "application/json",
           sort_by: "date",
+          max_days_old: "30",
         });
 
         const res = await fetch(
@@ -39,7 +39,8 @@ export async function fetchAdzuna() {
         );
 
         if (!res.ok) {
-          console.warn(`Adzuna: ${res.status} for query="${query}" location="${location}"`);
+          const errBody = await res.text().catch(() => "");
+          console.warn(`Adzuna: ${res.status} for query="${query}" location="${location}" — ${errBody.slice(0, 200)}`);
           continue;
         }
 

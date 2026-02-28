@@ -36,7 +36,7 @@ export function LiveFeeds({ feeds, region }) {
                     <div className="flex items-center gap-3">
                       <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                       <span className="text-sm text-gray-700 group-hover:text-blue-700">{feed.name}</span>
-                      <span className={`text-xs px-1.5 py-0.5 rounded ${feed.region === "NJ" ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"}`}>{feed.region}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${feed.region === "NJ" ? "bg-emerald-50 text-emerald-600" : feed.region === "MA" ? "bg-amber-50 text-amber-600" : "bg-slate-100 text-slate-500"}`}>{feed.region}</span>
                     </div>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-300 group-hover:text-blue-500"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                   </a>

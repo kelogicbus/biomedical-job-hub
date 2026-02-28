@@ -22,5 +22,13 @@
   { "name": "Rutgers NJMS Careers", "url": "https://njms.rutgers.edu/ccs/career_opportunities.php", "region": "NJ", "platform": "Institutional" },
   { "name": "BioSpace – Biotech R&D NY", "url": "https://jobs.biospace.com/jobs/science-r-and-d/new-york/biotechnology/", "region": "NYC", "platform": "Institutional" },
   { "name": "Built In NYC – Biotech", "url": "https://www.builtinnyc.com/jobs/biotech", "region": "NYC", "platform": "Institutional" },
-  { "name": "BiopharmGuy – Entry Level", "url": "https://biopharmguy.com/services/entrylevel.php", "region": "NJ", "platform": "Institutional" }
+  { "name": "BiopharmGuy – Entry Level", "url": "https://biopharmguy.com/services/entrylevel.php", "region": "NJ", "platform": "Institutional" },
+  { "name": "Indeed – Biomedical Research Boston", "url": "https://www.indeed.com/q-biomedical-research-l-boston,-ma-jobs.html", "region": "MA", "platform": "Indeed" },
+  { "name": "Indeed – Entry Level Research MA", "url": "https://www.indeed.com/q-entry-level-research-l-massachusetts-jobs.html", "region": "MA", "platform": "Indeed" },
+  { "name": "Indeed – Lab Technician Boston", "url": "https://www.indeed.com/q-laboratory-technician-l-boston,-ma-jobs.html", "region": "MA", "platform": "Indeed" },
+  { "name": "Glassdoor – Biomedical Scientist MA", "url": "https://www.glassdoor.com/Job/massachusetts-biomedical-scientist-jobs-SRCH_IL.0,13_IS69_KO14,34.htm", "region": "MA", "platform": "Glassdoor" },
+  { "name": "LinkedIn – Biomedical Research Boston", "url": "https://www.linkedin.com/jobs/biomedical-research-jobs-boston-ma-metropolitan-area", "region": "MA", "platform": "LinkedIn" },
+  { "name": "LinkedIn – Biotech Jobs Cambridge MA", "url": "https://www.linkedin.com/jobs/biotechnology-jobs-cambridge-ma", "region": "MA", "platform": "LinkedIn" },
+  { "name": "Mass General Brigham Careers", "url": "https://careers.massgeneralbrigham.org/", "region": "MA", "platform": "Institutional" },
+  { "name": "Dana-Farber Careers", "url": "https://careers.dana-farber.org/", "region": "MA", "platform": "Institutional" }
 ]

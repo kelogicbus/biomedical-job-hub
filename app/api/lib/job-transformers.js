@@ -43,6 +43,7 @@ function guessEmployerType(company) {
 
 function guessRegion(location) {
   const loc = (location || "").toLowerCase();
+  if (loc.includes(", ma") || loc.includes(" ma ") || loc.includes("massachusetts") || loc.includes("boston") || loc.includes("cambridge") || loc.includes("somerville") || loc.includes("worcester") || loc.includes("springfield") || loc.includes("framingham") || loc.includes("waltham") || loc.includes("burlington") || loc.includes("lowell") || loc.includes("amherst") || loc.includes("newton") || loc.includes("brookline") || loc.includes("quincy") || loc.includes("medford") || loc.endsWith(" ma")) return "MA";
   if (loc.includes("nj") || loc.includes("new jersey") || loc.includes("princeton") || loc.includes("new brunswick") || loc.includes("rahway") || loc.includes("kenilworth") || loc.includes("tarrytown")) return "NJ";
   return "NYC";
 }

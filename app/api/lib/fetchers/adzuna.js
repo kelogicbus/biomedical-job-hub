@@ -12,7 +12,7 @@ const SEARCH_QUERIES = [
   "junior scientist pharmaceutical",
 ];
 
-const LOCATIONS = ["New York", "New Jersey"];
+const LOCATIONS = ["New York", "New Jersey", "Massachusetts"];
 
 // Titles that indicate senior/irrelevant roles — reject these
 const SENIOR_KEYWORDS = [

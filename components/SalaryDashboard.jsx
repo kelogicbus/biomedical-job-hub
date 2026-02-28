@@ -32,9 +32,9 @@ export function SalaryDashboard({ jobs }) {
   }, [jobs]);
 
   const byRegion = useMemo(() => {
-    const g = { NYC: [], NJ: [] };
-    jobs.forEach(j => { if (j.salaryMin) g[j.region].push((j.salaryMin + j.salaryMax) / 2); });
-    return ["NYC", "NJ"].map(r => ({ name: r, avg: Math.round(g[r].reduce((a, b) => a + b, 0) / g[r].length), min: Math.round(Math.min(...g[r])), max: Math.round(Math.max(...g[r])), count: g[r].length }));
+    const g = { NYC: [], NJ: [], MA: [] };
+    jobs.forEach(j => { if (j.salaryMin && g[j.region]) g[j.region].push((j.salaryMin + j.salaryMax) / 2); });
+    return ["NYC", "NJ", "MA"].filter(r => g[r].length > 0).map(r => ({ name: r, avg: Math.round(g[r].reduce((a, b) => a + b, 0) / g[r].length), min: Math.round(Math.min(...g[r])), max: Math.round(Math.max(...g[r])), count: g[r].length }));
   }, [jobs]);
 
   const allSal = jobs.filter(j => j.salaryMin).map(j => (j.salaryMin + j.salaryMax) / 2);
@@ -77,14 +77,14 @@ export function SalaryDashboard({ jobs }) {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-5">
-        <h3 className="text-sm font-semibold text-gray-900 mb-1">NYC vs NJ Salary Comparison</h3>
-        <p className="text-xs text-gray-500 mb-4">NJ pharma corridor salaries are higher on average, with lower cost of living</p>
+        <h3 className="text-sm font-semibold text-gray-900 mb-1">Regional Salary Comparison</h3>
+        <p className="text-xs text-gray-500 mb-4">Comparing NYC, NJ pharma corridor, and MA biotech hub (Cambridge/Route 128) entry-level salaries</p>
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={byRegion} margin={{ left: 10, right: 20 }}>
             <XAxis dataKey="name" fontSize={12} />
             <YAxis tickFormatter={v => `$${v / 1000}k`} fontSize={11} />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="avg" radius={[4, 4, 0, 0]}><Cell fill="#6366f1" /><Cell fill="#10b981" /></Bar>
+            <Bar dataKey="avg" radius={[4, 4, 0, 0]}>{byRegion.map((_, i) => <Cell key={i} fill={["#6366f1", "#10b981", "#f59e0b"][i]} />)}</Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

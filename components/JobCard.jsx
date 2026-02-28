@@ -69,7 +69,7 @@ export function JobCard({ job, tracker, onUpdateTracker, onSave, saved, compact 
             <div className="flex items-center gap-1.5 flex-wrap mb-1">
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${colors}`}>{job.category}</span>
               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${eColors}`}>{job.employerType}</span>
-              <span className={`text-xs px-1.5 py-0.5 rounded-full ${job.region === "NJ" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-600"}`}>{job.region}</span>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full ${job.region === "NJ" ? "bg-emerald-50 text-emerald-700" : job.region === "MA" ? "bg-amber-50 text-amber-700" : "bg-slate-100 text-slate-600"}`}>{job.region}</span>
               {job.jobType !== "Full-time" && <span className="text-xs px-1.5 py-0.5 rounded-full bg-yellow-50 text-yellow-700">{job.jobType}</span>}
               {isNew(job.posted) && <span className="text-xs px-1.5 py-0.5 rounded-full bg-green-500 text-white font-bold">NEW</span>}
             </div>

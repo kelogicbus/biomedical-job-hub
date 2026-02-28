@@ -9,7 +9,7 @@ import { PipelineView } from "@/components/PipelineView";
 import { LiveFeeds } from "@/components/LiveFeeds";
 
 const CATEGORIES = ["All", "Molecular & Cell Biology", "Neuroscience", "Immunology / Immuno-oncology", "Clinical Trials / CRO", "Drug Discovery & Pharmacology", "Tissue Engineering / Regen Med", "Bioinformatics / Computational", "Quality Control / Regulatory", "Medical Devices / Biomaterials", "Public Health / Epidemiology"];
-const REGIONS = ["All", "NYC", "NJ"];
+const REGIONS = ["All", "NYC", "NJ", "MA"];
 const JOB_TYPES = ["All", "Full-time", "Internship", "Co-op", "Externship", "Contract"];
 const EMPLOYER_TYPES = ["All", "Academic", "Pharma", "Medical Center", "Biotech Startup", "CRO", "Government"];
 const SOURCES = ["All", "Indeed", "Glassdoor", "LinkedIn", "Direct"];
@@ -132,6 +132,7 @@ export default function Home() {
   const stats = useMemo(() => ({
     total: jobs.length, nyc: jobs.filter(j => j.region === "NYC").length,
     nj: jobs.filter(j => j.region === "NJ").length,
+    ma: jobs.filter(j => j.region === "MA").length,
     companies: new Set(jobs.map(j => j.company)).size,
   }), [jobs]);
 
@@ -153,7 +154,7 @@ export default function Home() {
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Rachael&#39;s Job Search &#x2764;&#xFE0F;</h1>
               <p className="text-blue-200 text-sm">
-                NYC + NJ &middot; Academia &middot; Pharma &middot; Biotech &middot; New Grad Positions
+                NYC + NJ + MA &middot; Academia &middot; Pharma &middot; Biotech &middot; New Grad Positions
                 {lastUpdated && (
                   <span className="ml-2 text-blue-300">
                     &middot; Updated {timeAgo(lastUpdated)}
@@ -163,8 +164,8 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-5">
-            {[{ v: loading ? "..." : stats.total, l: "Total Listings" }, { v: loading ? "..." : stats.nyc, l: "NYC" }, { v: loading ? "..." : stats.nj, l: "New Jersey" }, { v: loading ? "..." : stats.companies, l: "Institutions" }, { v: loading ? "..." : newCount, l: "New This Week" }].map((s, i) => (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mt-5">
+            {[{ v: loading ? "..." : stats.total, l: "Total Listings" }, { v: loading ? "..." : stats.nyc, l: "NYC" }, { v: loading ? "..." : stats.nj, l: "New Jersey" }, { v: loading ? "..." : stats.ma, l: "Massachusetts" }, { v: loading ? "..." : stats.companies, l: "Institutions" }, { v: loading ? "..." : newCount, l: "New This Week" }].map((s, i) => (
               <div key={i} className="bg-white/10 rounded-lg p-2.5 text-center backdrop-blur-sm">
                 <div className="text-xl font-bold">{s.v}</div>
                 <div className="text-xs text-blue-200">{s.l}</div>

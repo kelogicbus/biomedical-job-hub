@@ -27,7 +27,7 @@ function guessCategory(title, description) {
 
 function guessEmployerType(company) {
   const c = company.toLowerCase();
-  const pharma = ["pfizer", "merck", "bms", "bristol-myers", "novartis", "amgen", "regeneron", "j&j", "johnson", "abbvie", "roche", "sanofi", "lilly", "astrazeneca", "gsk", "kenvue"];
+  const pharma = ["pfizer", "merck", "bms", "bristol-myers", "novartis", "amgen", "regeneron", "j&j", "johnson", "abbvie", "roche", "sanofi", "lilly", "astrazeneca", "gsk", "kenvue", "moderna", "blueprint", "vertex", "takeda", "biogen", "alnylam", "sarepta"];
   const academic = ["university", "college", "institute", "school of", "rockefeller", "columbia", "nyu", "cornell", "princeton", "rutgers", "yale", "harvard", "mit"];
   const medical = ["hospital", "medical center", "mount sinai", "langone", "memorial sloan", "health system"];
   const cro = ["iqvia", "covance", "labcorp", "pra health", "parexel", "syneos", "icon"];
@@ -170,6 +170,43 @@ export function rssToJob(item, feedSource) {
   };
 
   // Add search links as fallbacks (RSS links may be direct to poster)
+  job.searchLinks = generateSearchLinks(job);
+
+  return job;
+}
+
+// --- Greenhouse ---
+
+export function greenhouseToJob(raw, company, boardToken) {
+  const title = raw.title || "";
+  const location = raw.location?.name || "";
+  const content = (raw.content || "").replace(/<[^>]*>/g, "").slice(0, 500);
+  const posted = raw.updated_at
+    ? new Date(raw.updated_at).toISOString().split("T")[0]
+    : new Date().toISOString().split("T")[0];
+
+  const job = {
+    id: `greenhouse-${boardToken}-${raw.id}`,
+    title,
+    company,
+    lab: null,
+    location,
+    region: guessRegion(location),
+    jobType: guessJobType(title),
+    category: guessCategory(title, content),
+    employerType: guessEmployerType(company),
+    salary: "Salary not listed",
+    salaryMin: null,
+    salaryMax: null,
+    description: content,
+    requirements: [],
+    posted,
+    link: raw.absolute_url || "",
+    source: "Direct",
+    lastSeen: new Date().toISOString().split("T")[0],
+  };
+
+  // Greenhouse provides direct apply links, but add search links as fallbacks
   job.searchLinks = generateSearchLinks(job);
 
   return job;

@@ -10,6 +10,10 @@ const SEARCH_QUERIES = [
   "laboratory assistant",
   "research intern biomedical",
   "junior scientist pharmaceutical",
+  "biotech research associate",
+  "quality control analyst pharmaceutical",
+  "clinical research assistant",
+  "biomanufacturing technician",
 ];
 
 const LOCATIONS = ["New York", "New Jersey", "Massachusetts"];
@@ -32,6 +36,10 @@ const BIOMEDICAL_TERMS = [
   "technician", "scientist", "biologist", "analyst",
   "assay", "pcr", "tissue", "pathology", "oncology",
   "microbiology", "biochem", "genetic", "specimen",
+  "quality", "manufacturing", "process", "regulatory", "gmp",
+  "validation", "formulation", "biologics", "qc", "biomanufacturing",
+  "protein", "antibody", "drug", "therapeutic", "medical",
+  "health", "diagnostic", "pharmaceutical",
 ];
 
 /**
@@ -75,11 +83,11 @@ export async function fetchAdzuna() {
           app_key: apiKey,
           what: query,
           where: location,
-          results_per_page: "20",
+          results_per_page: "50",
           sort_by: "date",
           max_days_old: "30",
           what_exclude: "senior director manager principal lead staff VP head",
-          salary_max: "85000",
+          salary_max: "100000",
         });
 
         const res = await fetch(
@@ -96,9 +104,9 @@ export async function fetchAdzuna() {
         const data = await res.json();
         const rawJobs = (data.results || []).map((raw) => adzunaToJob(raw));
 
-        // Post-fetch filter: only keep entry-level biomedical roles
-        const filtered = rawJobs.filter((job) => isEntryLevel(job.title, job.description));
-        allJobs.push(...filtered);
+        // No post-fetch filter here — cron/route.js applies isEntryLevel to ALL jobs
+        // Adzuna's server-side params (what_exclude, salary_max) handle initial filtering
+        allJobs.push(...rawJobs);
       } catch (err) {
         console.warn(`Adzuna fetch error (${query}/${location}):`, err.message);
       }

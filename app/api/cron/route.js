@@ -2,11 +2,12 @@ import { kvGet, kvSet } from "../lib/kv-helpers";
 import { deduplicateJobs, removeExpiredJobs } from "../lib/deduplicator";
 import { fetchAdzuna } from "../lib/fetchers/adzuna";
 import { fetchRSS } from "../lib/fetchers/rss";
+import { fetchGreenhouse } from "../lib/fetchers/greenhouse";
 import { generateSearchLinks } from "../lib/link-generator";
 import STATIC_JOBS from "@/data/jobs.json";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 // ---- Entry-level relevance filter (applied to ALL jobs) ----
 
@@ -25,6 +26,10 @@ const BIOMEDICAL_TERMS = [
   "technician", "scientist", "biologist", "analyst",
   "assay", "pcr", "tissue", "pathology", "oncology",
   "microbiology", "biochem", "genetic", "specimen",
+  "quality", "manufacturing", "process", "regulatory", "gmp",
+  "validation", "formulation", "biologics", "qc", "biomanufacturing",
+  "protein", "antibody", "drug", "therapeutic", "medical",
+  "health", "diagnostic", "pharmaceutical",
 ];
 
 function isEntryLevel(job) {
@@ -76,22 +81,26 @@ export async function GET(request) {
     const existingJobs = (await kvGet("jobs:live")) || [];
     log.carriedForward = existingJobs.length;
 
-    // 2. Fetch fresh jobs from Adzuna + RSS in parallel
-    const [adzunaJobs, rssJobs] = await Promise.allSettled([
+    // 2. Fetch fresh jobs from Adzuna + RSS + Greenhouse in parallel
+    const [adzunaJobs, rssJobs, greenhouseJobs] = await Promise.allSettled([
       fetchAdzuna(),
       fetchRSS(),
+      fetchGreenhouse(),
     ]);
 
     const adzunaResult = adzunaJobs.status === "fulfilled" ? adzunaJobs.value : [];
     const rssResult = rssJobs.status === "fulfilled" ? rssJobs.value : [];
+    const greenhouseResult = greenhouseJobs.status === "fulfilled" ? greenhouseJobs.value : [];
 
     if (adzunaJobs.status === "rejected") log.errors.push(`Adzuna: ${adzunaJobs.reason}`);
     if (rssJobs.status === "rejected") log.errors.push(`RSS: ${rssJobs.reason}`);
+    if (greenhouseJobs.status === "rejected") log.errors.push(`Greenhouse: ${greenhouseJobs.reason}`);
 
     log.sources.adzuna = adzunaResult.length;
     log.sources.rss = rssResult.length;
+    log.sources.greenhouse = greenhouseResult.length;
 
-    const allFetched = [...adzunaResult, ...rssResult];
+    const allFetched = [...adzunaResult, ...rssResult, ...greenhouseResult];
     log.totalFetched = allFetched.length;
 
     // 3. Prepare static jobs with today's date

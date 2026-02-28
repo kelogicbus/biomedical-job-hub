@@ -19,17 +19,34 @@ const SENIOR_KEYWORDS = [
   "executive", "supervisor", "superintendent",
 ];
 
+// Medical/clinical care roles — reject these (we want BME/lab/R&D, not patient care)
+const MEDICAL_KEYWORDS = [
+  "nurse", "nursing", "rn ", "lpn", "registered nurse",
+  "physician", "doctor", "md ", "surgeon", "anesthesi",
+  "medical assistant", "patient care", "bedside",
+  "phlebotom", "radiology tech", "respiratory therap",
+  "physical therap", "occupational therap", "speech therap",
+  "social worker", "case manager", "dietitian", "nutritionist",
+  "dental", "dentist", "optometr", "pharmacy tech",
+  "emt", "paramedic", "home health aide", "cna ",
+  "certified nursing", "medical coder", "medical billing",
+  "health aide", "caregiver", "hospice",
+];
+
 const BIOMEDICAL_TERMS = [
   "research", "lab", "laboratory", "biomedical", "biology",
-  "pharma", "biotech", "clinical", "molecular", "cell",
-  "neuro", "immuno", "genomic", "science", "chemistry",
-  "technician", "scientist", "biologist", "analyst",
-  "assay", "pcr", "tissue", "pathology", "oncology",
-  "microbiology", "biochem", "genetic", "specimen",
-  "quality", "manufacturing", "process", "regulatory", "gmp",
-  "validation", "formulation", "biologics", "qc", "biomanufacturing",
-  "protein", "antibody", "drug", "therapeutic", "medical",
-  "health", "diagnostic", "pharmaceutical",
+  "pharma", "biotech", "clinical research", "clinical trial",
+  "molecular", "cell", "neuro", "immuno", "genomic",
+  "science", "chemistry", "technician", "scientist",
+  "biologist", "analyst", "assay", "pcr", "tissue",
+  "pathology", "oncology", "microbiology", "biochem",
+  "genetic", "specimen", "quality", "manufacturing",
+  "process", "regulatory", "gmp", "validation",
+  "formulation", "biologics", "qc", "biomanufacturing",
+  "protein", "antibody", "drug", "therapeutic",
+  "diagnostic", "pharmaceutical", "medical device",
+  "biomaterial", "biomechanics", "instrumentation",
+  "biomedical engineer", "r&d", "engineering",
 ];
 
 function isEntryLevel(job) {
@@ -40,7 +57,10 @@ function isEntryLevel(job) {
   // Reject senior roles
   if (SENIOR_KEYWORDS.some((kw) => t.includes(kw))) return false;
 
-  // Must be biomedical-related
+  // Reject medical/clinical care roles (nurses, physicians, patient care, etc.)
+  if (MEDICAL_KEYWORDS.some((kw) => t.includes(kw))) return false;
+
+  // Must be biomedical/engineering-related
   if (!BIOMEDICAL_TERMS.some((term) => text.includes(term))) return false;
 
   // Reject very high salaries (senior indicator)

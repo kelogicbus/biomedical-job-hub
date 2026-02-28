@@ -6,63 +6,22 @@ const SEARCH_QUERIES = [
   "junior research associate biology",
   "lab technician entry level",
   "research technician",
-  "clinical research coordinator entry level",
   "laboratory assistant",
   "research intern biomedical",
   "junior scientist pharmaceutical",
   "biotech research associate",
   "quality control analyst pharmaceutical",
-  "clinical research assistant",
   "biomanufacturing technician",
+  "biomedical engineer entry level",
+  "R&D engineer biotech",
+  "medical device engineer entry level",
+  "process engineer pharmaceutical",
 ];
 
 const LOCATIONS = ["New York", "New Jersey", "Massachusetts"];
 
-// Titles that indicate senior/irrelevant roles — reject these
-const SENIOR_KEYWORDS = [
-  "senior", "sr.", "sr ", "principal", "director", "manager",
-  "head of", "chief", "vp ", "vice president", "lead",
-  "staff scientist", "distinguished", "fellow",
-  "professor", "faculty", "tenure", "pi ",
-  "executive", "supervisor", "superintendent",
-  "10+ years", "8+ years", "7+ years", "6+ years",
-];
-
-// Titles/descriptions must contain at least one of these to be relevant
-const BIOMEDICAL_TERMS = [
-  "research", "lab", "laboratory", "biomedical", "biology",
-  "pharma", "biotech", "clinical", "molecular", "cell",
-  "neuro", "immuno", "genomic", "science", "chemistry",
-  "technician", "scientist", "biologist", "analyst",
-  "assay", "pcr", "tissue", "pathology", "oncology",
-  "microbiology", "biochem", "genetic", "specimen",
-  "quality", "manufacturing", "process", "regulatory", "gmp",
-  "validation", "formulation", "biologics", "qc", "biomanufacturing",
-  "protein", "antibody", "drug", "therapeutic", "medical",
-  "health", "diagnostic", "pharmaceutical",
-];
-
-/**
- * Returns true if the job appears to be entry-level / new-grad appropriate.
- */
-function isEntryLevel(title, description) {
-  const t = title.toLowerCase();
-  const d = (description || "").toLowerCase();
-  const text = `${t} ${d}`;
-
-  // Reject senior roles
-  if (SENIOR_KEYWORDS.some((kw) => t.includes(kw))) return false;
-
-  // Must be biomedical-related
-  if (!BIOMEDICAL_TERMS.some((term) => text.includes(term))) return false;
-
-  // Salary sanity check — reject if description mentions very high salaries
-  // (indicative of senior roles even if title doesn't say "senior")
-  const salaryMatch = d.match(/\$(\d{3}),?\d{3}/);
-  if (salaryMatch && parseInt(salaryMatch[1]) >= 150) return false;
-
-  return true;
-}
+// Note: Entry-level filtering is handled centrally in cron/route.js
+// Adzuna's server-side params (what_exclude, salary_max) do initial filtering
 
 export async function fetchAdzuna() {
   const apiId = process.env.ADZUNA_API_ID;
